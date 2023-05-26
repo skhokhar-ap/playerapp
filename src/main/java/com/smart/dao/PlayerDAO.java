@@ -1,76 +1,99 @@
 package com.smart.dao;
-
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import org.springframework.stereotype.Repository;
+
+import com.smart.entities.Player;
+import com.smart.entities.Sport;
+import java.util.List;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
 import com.smart.entities.Player;
 import com.smart.entities.Sport;
 
 import java.util.List;
 
+@Repository
 public class PlayerDAO {
-    private Session session;
+    private final SessionFactory sessionFactory;
 
-    public PlayerDAO(Session session) {
-        this.session = session;
+    @Autowired
+    public PlayerDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
-    /**
-     * Retrieves players based on gender, level, and age.
-     *
-     * @param gender The gender of the players.
-     * @param level  The level of the players.
-     * @param age    The age of the players.
-     * @return A list of players matching the given criteria.
-     */
+    public void savePlayer(Player player) {
+        getCurrentSession().save(player);
+    }
+
+    public Player getPlayerById(Long id) {
+        return getCurrentSession().get(Player.class, id);
+    }
+
+    public void updatePlayer(Player player) {
+        getCurrentSession().merge(player);
+    }
+
+    public void deletePlayer(Player player) {
+        getCurrentSession().delete(player);
+    }
+
+    public Sport getSportById(Long id) {
+        return getCurrentSession().get(Sport.class, id);
+    }
+
+    public List<Player> getAllPlayers() {
+        String hql = "FROM Player";
+        Query<Player> query = getCurrentSession().createQuery(hql, Player.class);
+        return query.getResultList();
+    }
+
     public List<Player> getPlayersByGenderLevelAndAge(String gender, int level, int age) {
         String hql = "FROM Player WHERE gender = :gender AND level = :level AND age = :age";
-        Query<Player> query = session.createQuery(hql, Player.class);
+        Query<Player> query = getCurrentSession().createQuery(hql, Player.class);
         query.setParameter("gender", gender);
         query.setParameter("level", level);
         query.setParameter("age", age);
         return query.getResultList();
     }
 
-    /**
-     * Retrieves sports associated with multiple players.
-     *
-     * @return A list of sports associated with multiple players.
-     */
-    public List<Sport> getSportsAssociatedWithMultiplePlayers() {
-        String hql = "SELECT s FROM Sport s JOIN s.players p GROUP BY s HAVING COUNT(p) >= 2";
-        Query<Sport> query = session.createQuery(hql, Sport.class);
+    public List<Sport> getSportsWithPlayers(List<String> names) {
+        String hql = "SELECT s FROM Sport s JOIN FETCH s.players p WHERE s.name IN :names";
+        Query<Sport> query = getCurrentSession().createQuery(hql, Sport.class);
+        query.setParameter("names", names);
         return query.getResultList();
     }
 
-    /**
-     * Retrieves sports with no players associated.
-     *
-     * @return A list of sports with no players associated.
-     */
-    public List<Sport> getSportsWithNoPlayers() {
-        String hql = "SELECT s FROM Sport s WHERE s.players IS EMPTY";
-        Query<Sport> query = session.createQuery(hql, Sport.class);
+    public List<Player> getPlayersWithNoSports() {
+        String hql = "SELECT p FROM Player p WHERE p.sports IS EMPTY";
+        Query<Player> query = getCurrentSession().createQuery(hql, Player.class);
         return query.getResultList();
     }
 
-    /**
-     * Updates the player's information in the database.
-     *
-     * @param player The player object to be updated.
-     */
-    public void updatePlayer(Player player) {
-        session.saveOrUpdate(player);
-    }
-
-    /**
-     * Deletes a sport and its associated data from the database.
-     *
-     * @param sport The sport object to be deleted.
-     */
     public void deleteSport(Sport sport) {
-        session.delete(sport);
+        getCurrentSession().delete(sport);
+    }
+
+    public List<Player> getPaginatedPlayerList(int page, int size, String sportCategory) {
+        String hql = "SELECT p FROM Player p JOIN FETCH p.sports s";
+        if (sportCategory != null) {
+            hql += " WHERE s.name = :sportCategory";
+        }
+        Query<Player> query = getCurrentSession().createQuery(hql, Player.class);
+        if (sportCategory != null) {
+            query.setParameter("sportCategory", sportCategory);
+        }
+        query.setFirstResult(page * size);
+        query.setMaxResults(size);
+        return query.getResultList();
+    }
+
+    private Session getCurrentSession() {
+        return sessionFactory.getCurrentSession();
     }
 }
-
-

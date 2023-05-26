@@ -1,20 +1,18 @@
 package com.smart.entities;
 
 
- 
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
 
 import java.util.ArrayList;
 import java.util.List;
- 
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "players")
@@ -35,14 +33,21 @@ public class Player {
     @Column(nullable = false)
     private String gender;
 
+    @ManyToMany
+    @JoinTable(name = "player_sport")
+    private List<Sport> sports;
+
     // Constructors, getters, and setters
-    public Player() {}
+    public Player() {
+        this.sports = new ArrayList<>();
+    }
 
     public Player(String email, int level, int age, String gender) {
         this.email = email;
         this.level = level;
         this.age = age;
         this.gender = gender;
+        this.sports = new ArrayList<>();
     }
 
     public Long getId() {
@@ -84,5 +89,12 @@ public class Player {
     public void setGender(String gender) {
         this.gender = gender;
     }
-}
 
+    public List<Sport> getSports() {
+        return sports;
+    }
+
+    public void setSports(List<Sport> sports) {
+        this.sports = sports;
+    }
+}
